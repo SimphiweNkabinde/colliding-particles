@@ -1,14 +1,11 @@
 "use strict";
 const SCREEN_WIDTH = 1440;
 const SCREEN_HEIGHT = window.innerHeight;
-const CIRCLE_RADIUS = 50;
-//     two: [[0, 8, 20, 1], [0, 29, 61, 1], [0, 53, 102, 1], [255, 195, 0, 1], [255, 214, 10, 1], 1],
+const MAX_RADIUS = 50;
 const COLORS = [
     `rgba(0, 8, 20, 1)`,
-    // `rgba(0, 29, 61, 1)`,
     `rgba(0, 53, 102, 1)`,
     `rgba(255, 195, 0, 1)`,
-    // `rgba(255, 214, 10, 1)`
 ];
 
 function calcKineticEnergy(mass, velocity) {
@@ -16,7 +13,7 @@ function calcKineticEnergy(mass, velocity) {
     return 0.5 * mass * speed * speed
 }
 
-class Circle {
+class Particle {
     constructor(startPosition, radius, fillColor, startVelocity) {
         this.position = startPosition;
         this.radius = radius;
@@ -29,44 +26,44 @@ class Circle {
         canvasCtx.fillStyle = this.fillColor;
         canvasCtx.fill();
     }
-    collide(circleB) {
+    collide(particleB) {
         const impact = { 
-            x: circleB.position.x - this.position.x,
-            y: circleB.position.y - this.position.y
+            x: particleB.position.x - this.position.x,
+            y: particleB.position.y - this.position.y
         }
         let distance = Math.sqrt(Math.pow(impact.x, 2) + Math.pow(impact.y, 2))
 
-        if (distance < this.radius + circleB.radius) {
+        if (distance < this.radius + particleB.radius) {
             
             // calculate overlap and required shift values
-            const overlap = (this.radius + circleB.radius) - distance
+            const overlap = (this.radius + particleB.radius) - distance
             const scaleFactor = overlap * 0.5 / distance
             const shift = {
                 x: impact.x * scaleFactor,
                 y: impact.y * scaleFactor
             }
 
-            // shift circle to compensate for overlap
+            // shift particle to compensate for overlap
             this.position.x = this.position.x - shift.x
             this.position.y = this.position.y - shift.y
-            circleB.position.x = circleB.position.x + shift.x
-            circleB.position.y = circleB.position.y + shift.y
+            particleB.position.x = particleB.position.x + shift.x
+            particleB.position.y = particleB.position.y + shift.y
 
             // correct impact vector and distance
-            impact.x = circleB.position.x - this.position.x
-            impact.y = circleB.position.y - this.position.y
-            distance = this.radius + circleB.radius
+            impact.x = particleB.position.x - this.position.x
+            impact.y = particleB.position.y - this.position.y
+            distance = this.radius + particleB.radius
 
 
-            const kineticBefore = calcKineticEnergy(this.radius, this.velocity) + calcKineticEnergy(circleB.radius, circleB.velocity)
-            console.log(`Mass A:${this.radius}  B:${circleB.radius}\nSpeed A: ${(Math.sqrt(Math.pow(this.velocity.x, 2) + Math.pow(this.velocity.y, 2))).toFixed(2)} B: ${(Math.sqrt(Math.pow(circleB.velocity.x, 2) + Math.pow(circleB.velocity.y, 2))).toFixed(2)}\nkinetic E: ${kineticBefore.toFixed(2)}`)
+            const kineticBefore = calcKineticEnergy(this.radius, this.velocity) + calcKineticEnergy(particleB.radius, particleB.velocity)
+            console.log(`Mass A:${this.radius}  B:${particleB.radius}\nSpeed A: ${(Math.sqrt(Math.pow(this.velocity.x, 2) + Math.pow(this.velocity.y, 2))).toFixed(2)} B: ${(Math.sqrt(Math.pow(particleB.velocity.x, 2) + Math.pow(particleB.velocity.y, 2))).toFixed(2)}\nkinetic E: ${kineticBefore.toFixed(2)}`)
 
             const mA = this.radius
-            const mB = circleB.radius
+            const mB = particleB.radius
             const denominator = (mA+mB) * distance * distance
-            const vDiff = { x: circleB.velocity.x - this.velocity.x, y: circleB.velocity.y - this.velocity.y };
+            const vDiff = { x: particleB.velocity.x - this.velocity.x, y: particleB.velocity.y - this.velocity.y };
 
-            //  Circle A
+            //  Particle A
             const numeratorAx = 2 * mB * vDiff.x * impact.x
             const numeratorAy = 2 * mB * vDiff.y * impact.y
 
@@ -82,7 +79,7 @@ class Circle {
 
             this.velocity = vAfinal
 
-            //  Circle B
+            //  Particle B
             const numeratorBx = 2 * mA * (vDiff.x * -1) * (impact.x * -1)
             const numeratorBy = 2 * mA * (vDiff.y * -1) * (impact.y * -1)
             
@@ -92,11 +89,11 @@ class Circle {
             }
 
             const vBfinal = {
-                x: circleB.velocity.x + deltaVb.x,
-                y: circleB.velocity.y + deltaVb.y
+                x: particleB.velocity.x + deltaVb.x,
+                y: particleB.velocity.y + deltaVb.y
             }
-            circleB.velocity = vBfinal
-            const kineticAfter = calcKineticEnergy(this.radius, this.velocity) + calcKineticEnergy(circleB.radius, circleB.velocity)
+            particleB.velocity = vBfinal
+            const kineticAfter = calcKineticEnergy(this.radius, this.velocity) + calcKineticEnergy(particleB.radius, particleB.velocity)
             // if (kineticBefore !== kineticAfter) console.log(`${kineticBefore} : ${kineticAfter}`)
             return true
         } else {
@@ -106,10 +103,10 @@ class Circle {
 }
 
 function setNewRandomPosition() {
-    const radius = CIRCLE_RADIUS;
+    const radius = MAX_RADIUS;
     let finalX = Math.floor(Math.random() * SCREEN_WIDTH);
     let finalY = Math.floor(Math.random() * SCREEN_HEIGHT);
-    // compensate for circle radius
+    // compensate for particle radius
     if (finalX < radius)
         finalX += radius;
     if (SCREEN_HEIGHT - finalX < radius)
@@ -121,8 +118,8 @@ function setNewRandomPosition() {
     return { x: finalX, y: finalY };
 }
 
-function getCircles(number) {
-    const circleList = [];
+function getParticles(number) {
+    const particleList = [];
     for (let index = 0; index < number; index++) {
         const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
         const randomStartPosition = setNewRandomPosition()
@@ -132,11 +129,11 @@ function getCircles(number) {
             x: polarityX * Math.ceil(Math.random() *20),
             y: polarityY * Math.ceil(Math.random() * 20),
         };
-        const randomRadius = Math.ceil(Math.random() * CIRCLE_RADIUS)
-        const circle = new Circle(randomStartPosition, randomRadius, randomColor, randomVelocity);
-        circleList.push(circle);
+        const randomRadius = Math.ceil(Math.random() * MAX_RADIUS)
+        const particle = new Particle(randomStartPosition, randomRadius, randomColor, randomVelocity);
+        particleList.push(particle);
     }
-    return circleList;
+    return particleList;
 }
 
 function reactToEdgeCollisions(position, velocity, radius) {
@@ -150,10 +147,10 @@ function reactToEdgeCollisions(position, velocity, radius) {
 }
 /**
  * 
- * @param {Circle} circleA 
- * @param {Circle[]} allCircles 
+ * @param {Particle} particleA 
+ * @param {Particle[]} allParticles 
  */
-function reactToCircleCollisions(circleA, allCircles) {
+function reactToParticleCollisions(particleA, allParticles) {
 
 
 }
@@ -162,27 +159,27 @@ const canvas = document.querySelector('canvas');
 canvas.width = SCREEN_WIDTH;
 canvas.height = SCREEN_HEIGHT;
 const canvasCtx = canvas.getContext('2d');
-const circles = getCircles(20);
+const particles = getParticles(20);
 
 function renderVisualisation() {
     requestAnimationFrame(() => renderVisualisation());
     canvasCtx.fillStyle = "rgb(250 250 250)";
     canvasCtx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    circles.forEach((circleA, index) => {
-        reactToEdgeCollisions(circleA.position, circleA.velocity, circleA.radius);
-        circleA.position.x += circleA.velocity.x;
-        circleA.position.y += circleA.velocity.y;
+    particles.forEach((particleA, index) => {
+        reactToEdgeCollisions(particleA.position, particleA.velocity, particleA.radius);
+        particleA.position.x += particleA.velocity.x;
+        particleA.position.y += particleA.velocity.y;
 
-        for (let j = index + 1; j < circles.length; j++) {
-            const circleB = circles[j];
-            const collided = circleA.collide(circleB);
+        for (let j = index + 1; j < particles.length; j++) {
+            const particleB = particles[j];
+            const collided = particleA.collide(particleB);
             if (collided === true) break;
         }
-        circleA.draw(canvasCtx);
+        particleA.draw(canvasCtx);
     });
-    circles.forEach((circleA) => {
-        circleA.draw(canvasCtx);
+    particles.forEach((particleA) => {
+        particleA.draw(canvasCtx);
     });
 }
 renderVisualisation();
