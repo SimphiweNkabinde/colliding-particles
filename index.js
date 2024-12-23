@@ -5,10 +5,15 @@ const CIRCLE_RADIUS = 50;
 const COLORS = [
     `rgba(43, 45, 66, 1)`,
     `rgba(141, 153, 174, 1)`,
-    `rgba(237, 242, 244, 1)`,
+    // `rgba(237, 242, 244, 1)`,
     `rgba(239, 35, 60, 1)`,
     `rgba(217, 4, 41, 1)`
 ];
+
+function calcKineticEnergy(mass, velocity) {
+    const speed = Math.sqrt(Math.pow(velocity.x, 2) + Math.pow(velocity.y, 2))
+    return 0.5 * mass * speed * speed
+}
 
 class Circle {
     constructor(startPosition, radius, fillColor, startVelocity) {
@@ -23,44 +28,75 @@ class Circle {
         canvasCtx.fillStyle = this.fillColor;
         canvasCtx.fill();
     }
-    collide(otheCircle) {
+    collide(circleB) {
+        const impact = { 
+            x: circleB.position.x - this.position.x,
+            y: circleB.position.y - this.position.y
+        }
+        let distance = Math.sqrt(Math.pow(impact.x, 2) + Math.pow(impact.y, 2))
 
-        const v1dx = this.position.x - otheCircle.position.x
-        const v1dy = this.position.y - otheCircle.position.y
-        const v2dx = otheCircle.position.x - this.position.x
-        const v2dy = otheCircle.position.y - this.position.y
-        const distance = Math.sqrt(Math.pow(v1dx, 2) + Math.pow(v1dy, 2))
-
-        if (distance < (this.radius + otheCircle.radius) && distance > (this.radius )) {
-
-            const v1dV = { x: otheCircle.velocity.x - this.velocity.x, y: otheCircle.velocity.y - this.velocity.y };
-            const v2dV = { x: this.velocity.x - otheCircle.velocity.x, y: this.velocity.y - otheCircle.velocity.y};
-            const v1dS = { x: v1dx, y: v1dy }
-            const v2dS = { x: v2dx, y: v2dy }
-            const v1s = this.velocity
-            const v2s = otheCircle.velocity
-            const m1 = this.radius
-            const m2 = otheCircle.radius
+        if (distance < this.radius + circleB.radius) {
             
-            const v1numeratorX = (2 * m2) * v1dV.x * v1dS.x * v1dS.x
-            const v1numeratorY = (2 * m2) * v1dV.y * v1dS.y * v1dS.y
-
-            const v2numeratorX = (2 * m2) * v2dV.x * v2dS.x * v2dS.x
-            const v2numeratorY = (2 * m2) * v2dV.y * v2dS.y * v2dS.y
-
-            const denominator = (m1+m2) * distance * distance
-
-            const v1Final = { 
-                x: ((v1s.x * denominator) + v1numeratorX )/denominator,
-                y: ((v1s.y * denominator) + v1numeratorY )/denominator
+            // calculate overlap and required shift values
+            const overlap = (this.radius + circleB.radius) - distance
+            const scaleFactor = overlap * 0.5 / distance
+            const shift = {
+                x: impact.x * scaleFactor,
+                y: impact.y * scaleFactor
             }
 
-            const v2Final = {
-                x: ((v2s.x * denominator) + v2numeratorX)/denominator,
-                y: ((v2s.y * denominator) + v2numeratorY)/denominator
+            // shift circle to compensate for overlap
+            this.position.x = this.position.x - shift.x
+            this.position.y = this.position.y - shift.y
+            circleB.position.x = circleB.position.x + shift.x
+            circleB.position.y = circleB.position.y + shift.y
+
+            // correct impact vector and distance
+            impact.x = circleB.position.x - this.position.x
+            impact.y = circleB.position.y - this.position.y
+            distance = this.radius + circleB.radius
+
+
+            const kineticBefore = calcKineticEnergy(this.radius, this.velocity) + calcKineticEnergy(circleB.radius, circleB.velocity)
+            console.log(`Mass A:${this.radius}  B:${circleB.radius}\nSpeed A: ${(Math.sqrt(Math.pow(this.velocity.x, 2) + Math.pow(this.velocity.y, 2))).toFixed(2)} B: ${(Math.sqrt(Math.pow(circleB.velocity.x, 2) + Math.pow(circleB.velocity.y, 2))).toFixed(2)}\nkinetic E: ${kineticBefore.toFixed(2)}`)
+
+            const mA = this.radius
+            const mB = circleB.radius
+            const denominator = (mA+mB) * distance * distance
+            const vDiff = { x: circleB.velocity.x - this.velocity.x, y: circleB.velocity.y - this.velocity.y };
+
+            //  Circle A
+            const numeratorAx = 2 * mB * vDiff.x * impact.x
+            const numeratorAy = 2 * mB * vDiff.y * impact.y
+
+            const deltaVa = {
+                x: numeratorAx / denominator * impact.x,
+                y: numeratorAy / denominator * impact.y
             }
-            this.velocity = v1Final
-            otheCircle.velocity = v2Final
+
+            const vAfinal = {
+                x: this.velocity.x + deltaVa.x,
+                y: this.velocity.y + deltaVa.y
+            }
+
+            this.velocity = vAfinal
+
+            //  Circle B
+            const numeratorBx = 2 * mA * (vDiff.x * -1) * (impact.x * -1)
+            const numeratorBy = 2 * mA * (vDiff.y * -1) * (impact.y * -1)
+            
+            const deltaVb = {
+                x: numeratorBx / denominator * (impact.x * -1),
+                y: numeratorBy / denominator * (impact.y * -1)
+            }
+
+            const vBfinal = {
+                x: circleB.velocity.x + deltaVb.x,
+                y: circleB.velocity.y + deltaVb.y
+            }
+            circleB.velocity = vBfinal
+            const kineticAfter = calcKineticEnergy(this.radius, this.velocity) + calcKineticEnergy(circleB.radius, circleB.velocity)
+            // if (kineticBefore !== kineticAfter) console.log(`${kineticBefore} : ${kineticAfter}`)
             return true
         } else {
             return false
@@ -92,11 +128,11 @@ function getCircles(number) {
         let polarityX = index % 2 == 0 ? -1 : 1;
         let polarityY = index % 3 == 0 ? -1 : 1;
         const randomVelocity = {
-            x: polarityX * Math.ceil(Math.random() * 10),
-            y: polarityY * Math.ceil(Math.random() * 10),
+            x: polarityX * Math.ceil(Math.random() *20),
+            y: polarityY * Math.ceil(Math.random() * 20),
         };
         const randomRadius = Math.ceil(Math.random() * CIRCLE_RADIUS)
-        const circle = new Circle(randomStartPosition, CIRCLE_RADIUS, randomColor, randomVelocity);
+        const circle = new Circle(randomStartPosition, randomRadius, randomColor, randomVelocity);
         circleList.push(circle);
     }
     return circleList;
@@ -125,7 +161,7 @@ const canvas = document.querySelector('canvas');
 canvas.width = SCREEN_WIDTH;
 canvas.height = SCREEN_HEIGHT;
 const canvasCtx = canvas.getContext('2d');
-const circles = getCircles(5);
+const circles = getCircles(2);
 
 function renderVisualisation() {
     requestAnimationFrame(() => renderVisualisation());
@@ -137,12 +173,12 @@ function renderVisualisation() {
         circleA.position.x += circleA.velocity.x;
         circleA.position.y += circleA.velocity.y;
 
-        // for (let j = index + 1; j < circles.length; j++) {
-        //     const circleB = circles[j];
-        //     const collided = circleA.collide(circleB);
-        //     if (collided === true) break;
-        // }
-        // circleA.draw(canvasCtx);
+        for (let j = index + 1; j < circles.length; j++) {
+            const circleB = circles[j];
+            const collided = circleA.collide(circleB);
+            if (collided === true) break;
+        }
+        circleA.draw(canvasCtx);
     });
     circles.forEach((circleA) => {
         circleA.draw(canvasCtx);
