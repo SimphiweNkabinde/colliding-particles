@@ -3,9 +3,9 @@ const SCREEN_WIDTH = 1440;
 const SCREEN_HEIGHT = window.innerHeight;
 const MAX_RADIUS = 50;
 const COLORS = [
-    `rgba(0, 8, 20, 1)`,
-    `rgba(0, 53, 102, 1)`,
-    `rgba(255, 195, 0, 1)`,
+    `rgba(211, 194, 246, 1)`,
+    `rgba(169, 201, 255, 1)`,
+    `rgba(255, 187, 236, 1)`,
 ];
 
 function calcKineticEnergy(mass, velocity) {
