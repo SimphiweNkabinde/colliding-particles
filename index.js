@@ -2,12 +2,13 @@
 const SCREEN_WIDTH = 1440;
 const SCREEN_HEIGHT = window.innerHeight;
 const CIRCLE_RADIUS = 50;
+//     two: [[0, 8, 20, 1], [0, 29, 61, 1], [0, 53, 102, 1], [255, 195, 0, 1], [255, 214, 10, 1], 1],
 const COLORS = [
-    `rgba(43, 45, 66, 1)`,
-    `rgba(141, 153, 174, 1)`,
-    // `rgba(237, 242, 244, 1)`,
-    `rgba(239, 35, 60, 1)`,
-    `rgba(217, 4, 41, 1)`
+    `rgba(0, 8, 20, 1)`,
+    // `rgba(0, 29, 61, 1)`,
+    `rgba(0, 53, 102, 1)`,
+    `rgba(255, 195, 0, 1)`,
+    // `rgba(255, 214, 10, 1)`
 ];
 
 function calcKineticEnergy(mass, velocity) {
@@ -161,7 +162,7 @@ const canvas = document.querySelector('canvas');
 canvas.width = SCREEN_WIDTH;
 canvas.height = SCREEN_HEIGHT;
 const canvasCtx = canvas.getContext('2d');
-const circles = getCircles(2);
+const circles = getCircles(20);
 
 function renderVisualisation() {
     requestAnimationFrame(() => renderVisualisation());
