@@ -1,11 +1,6 @@
 const SCREEN_WIDTH = 1440;
 const SCREEN_HEIGHT = window.innerHeight;
 const MAX_RADIUS = 50;
-const COLORS = [
-    `rgba(211, 194, 246, 1)`,
-    `rgba(169, 201, 255, 1)`,
-    `rgba(255, 187, 236, 1)`,
-];
 
 function calcKineticEnergy(mass, velocity) {
     const speed = Math.sqrt(Math.pow(velocity.x, 2) + Math.pow(velocity.y, 2))
@@ -129,7 +124,6 @@ function setNewRandomPosition() {
 function getParticles(number) {
     const particleList = [];
     for (let index = 0; index < number; index++) {
-        const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
         const randomStartPosition = setNewRandomPosition()
         let polarityX = index % 2 == 0 ? -1 : 1;
         let polarityY = index % 3 == 0 ? -1 : 1;
@@ -138,7 +132,7 @@ function getParticles(number) {
             y: polarityY * Math.ceil(Math.random() * 20),
         };
         const randomRadius = Math.ceil(Math.random() * MAX_RADIUS)
-        const particle = new Particle(randomStartPosition, randomRadius, randomColor, randomVelocity);
+        const particle = new Particle(randomStartPosition, randomRadius, 'rgb(37, 112, 27)', randomVelocity);
         particleList.push(particle);
     }
     return particleList;
