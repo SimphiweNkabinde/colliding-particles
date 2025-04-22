@@ -1,12 +1,44 @@
-const SCREEN_WIDTH = 1440;
-const SCREEN_HEIGHT = window.innerHeight;
-const MAX_RADIUS = 50;
+const canvasWidth = 1440;
+const canvasHeight = window.innerHeight;
 
-function calcKineticEnergy(mass, velocity) {
-    const speed = Math.sqrt(Math.pow(velocity.x, 2) + Math.pow(velocity.y, 2))
-    return 0.5 * mass * speed * speed
-}
-
+const particleList = [
+    {
+        position: { x: 100, y: 500 },
+        radius: 40,
+        color: 'rgb(255, 195, 0)',
+        velocity: {
+            x: -25,
+            y: 10,
+        }
+    },
+    {
+        position: { x: 300, y: 200 },
+        radius: 50,
+        color: 'rgb(0, 53, 102)',
+        velocity: {
+            x: -15,
+            y: 20,
+        }
+    },
+    {
+        position: { x: 700, y: 300 },
+        radius: 60,
+        color: 'rgb(141, 153, 174)',
+        velocity: {
+            x: -45,
+            y: 40,
+        }
+    },
+    {
+        position: { x: 700, y: 300 },
+        radius: 15,
+        color: 'rgb(0, 8, 20)',
+        velocity: {
+            x: -45,
+            y: 5,
+        }
+    },
+]
 class Particle {
     constructor(startPosition, radius, fillColor, startVelocity) {
         this.position = startPosition;
@@ -20,26 +52,41 @@ class Particle {
         canvasCtx.fillStyle = this.fillColor;
         canvasCtx.fill();
     }
-    reactToEdgeCollisions() {
-        // collision with walls
-        if (this.position.x + this.radius > SCREEN_WIDTH || this.position.x - this.radius < 0) {
-            this.velocity.x = -this.velocity.x;
+    handleBoundaryCollision() {
+        if (this.position.x - this.radius < 0) {
+            this.velocity.x *= -1;
+            this.position.x = this.radius + 1
+        } else if (this.position.x + this.radius > canvasWidth) {
+            this.velocity.x *= -1;
+            this.position.x = canvasWidth - this.radius 
         }
-        if (this.position.y + this.radius > SCREEN_HEIGHT || this.position.y - this.radius < 0) {
-            this.velocity.y = -this.velocity.y;
+        if (this.position.y - this.radius < 0) {
+            this.velocity.y *= -1;
+            this.position.y = this.radius + 1
+        } else if (this.position.y + this.radius > canvasHeight) {
+            this.velocity.y *= -1;
+            this.position.y = canvasHeight - this.radius
         }
     }
-    collide(particleB) {
+    updatePosition() {
+        this.position.x += this.velocity.x;
+        this.position.y += this.velocity.y;
+    }
+    increaseVelocity(number) {
+        this.velocity.x = this.velocity.x + (Math.sign(this.velocity.x) * number)
+        this.velocity.y = this.velocity.y + (Math.sign(this.velocity.y) * number)
+    }
+    collideWith(otherParticle) {
         const impact = { 
-            x: particleB.position.x - this.position.x,
-            y: particleB.position.y - this.position.y
+            x: otherParticle.position.x - this.position.x,
+            y: otherParticle.position.y - this.position.y
         }
         let distance = Math.sqrt(Math.pow(impact.x, 2) + Math.pow(impact.y, 2))
 
-        if (distance < this.radius + particleB.radius) {
+        if (distance < this.radius + otherParticle.radius) {
             
             // calculate overlap and required shift values
-            const overlap = (this.radius + particleB.radius) - distance
+            const overlap = (this.radius + otherParticle.radius) - distance
             const scaleFactor = overlap * 0.5 / distance
             const shift = {
                 x: impact.x * scaleFactor,
@@ -49,22 +96,18 @@ class Particle {
             // shift particle to compensate for overlap
             this.position.x = this.position.x - shift.x
             this.position.y = this.position.y - shift.y
-            particleB.position.x = particleB.position.x + shift.x
-            particleB.position.y = particleB.position.y + shift.y
+            otherParticle.position.x = otherParticle.position.x + shift.x
+            otherParticle.position.y = otherParticle.position.y + shift.y
 
             // correct impact vector and distance
-            impact.x = particleB.position.x - this.position.x
-            impact.y = particleB.position.y - this.position.y
-            distance = this.radius + particleB.radius
-
-
-            const kineticBefore = calcKineticEnergy(this.radius, this.velocity) + calcKineticEnergy(particleB.radius, particleB.velocity)
-            // console.log(`Mass A:${this.radius}  B:${particleB.radius}\nSpeed A: ${(Math.sqrt(Math.pow(this.velocity.x, 2) + Math.pow(this.velocity.y, 2))).toFixed(2)} B: ${(Math.sqrt(Math.pow(particleB.velocity.x, 2) + Math.pow(particleB.velocity.y, 2))).toFixed(2)}\nkinetic E: ${kineticBefore.toFixed(2)}`)
+            impact.x = otherParticle.position.x - this.position.x
+            impact.y = otherParticle.position.y - this.position.y
+            distance = this.radius + otherParticle.radius
 
             const mA = this.radius
-            const mB = particleB.radius
+            const mB = otherParticle.radius
             const denominator = (mA+mB) * distance * distance
-            const vDiff = { x: particleB.velocity.x - this.velocity.x, y: particleB.velocity.y - this.velocity.y };
+            const vDiff = { x: otherParticle.velocity.x - this.velocity.x, y: otherParticle.velocity.y - this.velocity.y };
 
             //  Particle A
             const numeratorAx = 2 * mB * vDiff.x * impact.x
@@ -92,12 +135,10 @@ class Particle {
             }
 
             const vBfinal = {
-                x: particleB.velocity.x + deltaVb.x,
-                y: particleB.velocity.y + deltaVb.y
+                x: otherParticle.velocity.x + deltaVb.x,
+                y: otherParticle.velocity.y + deltaVb.y
             }
-            particleB.velocity = vBfinal
-            const kineticAfter = calcKineticEnergy(this.radius, this.velocity) + calcKineticEnergy(particleB.radius, particleB.velocity)
-            // if (kineticBefore !== kineticAfter) console.log(`${kineticBefore} : ${kineticAfter}`)
+            otherParticle.velocity = vBfinal
             return true
         } else {
             return false
@@ -105,81 +146,30 @@ class Particle {
     }
 }
 
-function setNewRandomPosition() {
-    const radius = MAX_RADIUS;
-    let finalX = Math.floor(Math.random() * SCREEN_WIDTH);
-    let finalY = Math.floor(Math.random() * SCREEN_HEIGHT);
-    // compensate for particle radius
-    if (finalX < radius)
-        finalX += radius;
-    if (SCREEN_HEIGHT - finalX < radius)
-        finalX -= radius;
-    if (finalY < radius)
-        finalY += radius;
-    if (SCREEN_HEIGHT - finalY < radius)
-        finalY -= radius;
-    return { x: finalX, y: finalY };
-}
-
-function getParticles(number) {
-    const particleList = [];
-    for (let index = 0; index < number; index++) {
-        const randomStartPosition = setNewRandomPosition()
-        let polarityX = index % 2 == 0 ? -1 : 1;
-        let polarityY = index % 3 == 0 ? -1 : 1;
-        const randomVelocity = {
-            x: polarityX * Math.ceil(Math.random() *20),
-            y: polarityY * Math.ceil(Math.random() * 20),
-        };
-        const randomRadius = Math.ceil(Math.random() * MAX_RADIUS)
-        const particle = new Particle(randomStartPosition, randomRadius, 'rgb(37, 112, 27)', randomVelocity);
-        particleList.push(particle);
-    }
-    return particleList;
-}
-/**
- * 
- * @param {Particle} particleA 
- * @param {Particle[]} allParticles 
- */
-function reactToParticleCollisions(particleA, allParticles) {
-
-
-}
-
+const button = document.querySelector('button')
 const canvas = document.querySelector('canvas');
-canvas.width = SCREEN_WIDTH;
-canvas.height = SCREEN_HEIGHT;
+canvas.width = canvasWidth;
+canvas.height = canvasHeight;
 const canvasCtx = canvas.getContext('2d');
-const particles = getParticles(5);
+const particles = particleList.map(p => new Particle(p.position, p.radius, p.color, p.velocity));
 
 // increase velocity
-canvas.addEventListener("click", () => {
-    particles.forEach(p => {
-        p.velocity.x = p.velocity.x * 2
-        p.velocity.y = p.velocity.y * 2
-    })
-})
+button.addEventListener("click", () => particles.forEach(p => p.increaseVelocity(10)))
 
 function renderVisualisation() {
     requestAnimationFrame(() => renderVisualisation());
     canvasCtx.fillStyle = "rgb(250 250 250)";
-    canvasCtx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    canvasCtx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-    particles.forEach((particleA, index) => {
-        particleA.reactToEdgeCollisions();
-        particleA.position.x += particleA.velocity.x;
-        particleA.position.y += particleA.velocity.y;
+    particles.forEach((particle, index) => {
+        particle.handleBoundaryCollision();
+        particle.updatePosition();
 
         for (let j = index + 1; j < particles.length; j++) {
-            const particleB = particles[j];
-            const collided = particleA.collide(particleB);
-            if (collided === true) break;
+            const collided = particle.collideWith(particles[j]);
+            if (collided) break;
         }
-        particleA.draw(canvasCtx);
-    });
-    particles.forEach((particleA) => {
-        particleA.draw(canvasCtx);
+        particle.draw(canvasCtx);
     });
 }
 renderVisualisation();
