@@ -12,15 +12,6 @@ const particleList = [
         }
     },
     {
-        position: { x: 300, y: 200 },
-        radius: 50,
-        color: 'rgb(0, 53, 102)',
-        velocity: {
-            x: -15,
-            y: 20,
-        }
-    },
-    {
         position: { x: 700, y: 300 },
         radius: 60,
         color: 'rgb(141, 153, 174)',
@@ -173,6 +164,3 @@ function renderVisualisation() {
     });
 }
 renderVisualisation();
-
-// resource
-// https://youtu.be/dJNFPv9Mj-Y?si=x7k0ledd4RBwsDnT
