@@ -18,7 +18,7 @@ Clone the repo
 open `index.html` in a browser
 
 ## Usage
-Click the play button to accelerate the moving particles.
+Click the accelerate button to accelerate the moving particles.
 
 
 ![Demo](demo.gif)
